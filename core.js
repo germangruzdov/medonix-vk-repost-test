@@ -114,7 +114,8 @@ export function withTimeout(promise, milliseconds) {
   ]).finally(() => clearTimeout(timer));
 }
 
-export function createPublisher({ bridge, campaign, onState = () => {}, log = () => {},
+export function createPublisher({ bridge, campaign, onState = () => {}, onDiagnostic = () => {},
+  verifyResult, log = () => {},
   slowAfterMs = 45000, now = () => performance.now() }) {
   let state = 'ready';
   let pending;
@@ -128,6 +129,7 @@ export function createPublisher({ bridge, campaign, onState = () => {}, log = ()
       if (state === 'published' || state === 'unconfirmed') return Promise.resolve(state);
       update('opening');
       const started = now();
+      let receivedResult = false;
       log('info', 'composer.open', { campaign: campaign.id, mediaKind: campaign.kind });
       const timer = setTimeout(() => {
         update('waiting'); log('warning', 'composer.waiting', { elapsedMs: Math.round(now() - started) });
@@ -135,19 +137,34 @@ export function createPublisher({ bridge, campaign, onState = () => {}, log = ()
       pending = Promise.resolve().then(() => bridge.send('VKWebAppShowWallPostBox', {
         message: campaign.message,
         attachments: campaign.attachment,
-      })).then((result) => {
-        const next = validPostResult(result) ? 'published' : 'unconfirmed';
+      })).then(async (result) => {
+        receivedResult = true;
+        clearTimeout(timer);
+        let confirmed = validPostResult(result);
+        if (confirmed && verifyResult) {
+          update('verifying');
+          confirmed = await verifyResult(result) === true;
+        } else if (!confirmed) {
+          onDiagnostic({ phase: 'COMPOSER_RESULT', code: 'RESULT_NOT_CONFIRMED' });
+        }
+        const next = confirmed ? 'published' : 'unconfirmed';
         update(next);
         log(next === 'published' ? 'info' : 'warning', `composer.${next}`, {
           elapsedMs: Math.round(now() - started),
         });
         return next;
       }).catch((error) => {
-        update('not_published');
+        // Only a cancelled native dialog permits an explicit retry. Other
+        // failures may arrive after publication and remain locked.
+        const cancelled = !receivedResult && error?.error_type === 'client_error'
+          && error?.error_data?.error_code === 4;
+        const next = cancelled ? 'not_published' : 'unconfirmed';
+        onDiagnostic({ phase: receivedResult ? 'PUBLICATION_VERIFY' : 'COMPOSER', ...diagnosticFields(error) });
+        update(next);
         log('warning', 'composer.not_confirmed', {
           ...diagnosticFields(error), elapsedMs: Math.round(now() - started),
         });
-        return 'not_published';
+        return next;
       }).finally(() => { clearTimeout(timer); pending = undefined; });
       return pending;
     },

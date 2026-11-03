@@ -6,9 +6,9 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Поделиться видео — МедОникс</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=0.3.0">
   <script src="vendor/vk-bridge-3.0.2.min.js" defer></script>
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=0.3.0"></script>
 </head>
 <body>
   <main class="shell">
@@ -17,13 +17,14 @@
       <div class="video-icon" aria-hidden="true">▶</div>
       <p class="eyebrow">ВИДЕО СООБЩЕСТВА</p>
       <h1 id="heading">Поделиться видео</h1>
-      <p class="intro">Добавьте видео к себе на стену. Запись можно изменить перед публикацией.</p>
+      <p class="intro">Новая запись с видео МедОникс на вашей стене. ВК покажет её перед публикацией.</p>
       <div class="status" id="status" role="status" aria-live="polite">Подготавливаем публикацию…</div>
-      <button type="button" id="publish" disabled>Открыть публикацию</button>
+      <p id="diagnostic-code" class="diagnostic-code" role="note" hidden></p>
+      <button type="button" id="publish" disabled>Опубликовать видео на моей стене</button>
+      <a id="open-vk" class="source" href="https://vk.ru/app54874242#post=6311" hidden>Открыть приложение ВКонтакте ↗</a>
       <a class="source" id="source" href="https://vk.ru/wall-218885671_6311" target="_blank" rel="noopener noreferrer">Посмотреть исходную запись ↗</a>
     </section>
-    <p class="footnote">Публикацию подтверждаете только вы.</p>
-    <a id="setup-link" class="setup-link" href="setup.html" hidden>Настройка для владельца</a>
+    <p class="footnote">Публикацию подтверждаете вы в окне ВК.<br>Новая запись не увеличивает счётчик репостов исходного поста.<br><span id="build-version">Версия 0.3.0</span><br><a class="source" href="privacy.html">Как используются данные</a></p>
     <details id="diagnostics" hidden><summary>Диагностика</summary><pre id="diagnostic-output"></pre></details>
   </main>
 </body>

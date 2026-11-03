@@ -5,23 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>Репост записи — МедОникс</title>
-  <link rel="stylesheet" href="styles.css?v=0.2.3">
+  <title>Поделиться видео — МедОникс</title>
+  <link rel="stylesheet" href="styles.css?v=0.3.0">
   <script src="vendor/vk-bridge-3.0.2.min.js" defer></script>
-  <script type="module" src="repost.js?v=0.2.3"></script>
+  <script type="module" src="app.js?v=0.3.0"></script>
 </head>
-<body><main class="shell">
-  <div class="brand"><span class="brand-mark" aria-hidden="true">м</span>МедОникс</div>
-  <section class="card" aria-labelledby="heading">
-    <div class="video-icon" aria-hidden="true">↗</div>
-    <p class="eyebrow">ИСХОДНАЯ ЗАПИСЬ СООБЩЕСТВА</p>
-    <h1 id="heading">Сделать репост</h1>
-    <p class="intro">Нажмите кнопку, чтобы разместить исходную запись МедОникс на своей стене. При первом использовании ВК может запросить разрешение.</p>
-    <div id="status" class="status" role="status" aria-live="polite">Подготавливаем приложение…</div>
-    <p id="diagnostic-code" class="diagnostic-code" role="note" hidden></p>
-    <button type="button" id="publish" disabled>Сделать репост на моей стене</button>
-    <a id="source" class="source" href="https://vk.ru/wall-218885671_6311" target="_blank" rel="noopener noreferrer">Посмотреть исходную запись ↗</a>
-  </section>
-  <p class="footnote">Репост выполняется только после нажатия кнопки.<br><span id="build-version">Версия 0.2.3</span><br><a class="source" href="privacy.html">Как используются данные</a></p>
-  <details id="diagnostics" hidden><summary>Диагностика</summary><pre id="diagnostic-output"></pre></details>
-</main></body></html>
+<body>
+  <main class="shell">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">м</span>МедОникс</div>
+    <section class="card" aria-labelledby="heading">
+      <div class="video-icon" aria-hidden="true">▶</div>
+      <p class="eyebrow">ВИДЕО СООБЩЕСТВА</p>
+      <h1 id="heading">Поделиться видео</h1>
+      <p class="intro">Новая запись с видео МедОникс на вашей стене. ВК покажет её перед публикацией.</p>
+      <div class="status" id="status" role="status" aria-live="polite">Подготавливаем публикацию…</div>
+      <p id="diagnostic-code" class="diagnostic-code" role="note" hidden></p>
+      <button type="button" id="publish" disabled>Опубликовать видео на моей стене</button>
+      <a id="open-vk" class="source" href="https://vk.ru/app54874242#post=6311" hidden>Открыть приложение ВКонтакте ↗</a>
+      <a class="source" id="source" href="https://vk.ru/wall-218885671_6311" target="_blank" rel="noopener noreferrer">Посмотреть исходную запись ↗</a>
+    </section>
+    <p class="footnote">Публикацию подтверждаете вы в окне ВК.<br>Новая запись не увеличивает счётчик репостов исходного поста.<br><span id="build-version">Версия 0.3.0</span><br><a class="source" href="privacy.html">Как используются данные</a></p>
+    <details id="diagnostics" hidden><summary>Диагностика</summary><pre id="diagnostic-output"></pre></details>
+  </main>
+</body>
+</html>
