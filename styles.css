@@ -12,6 +12,7 @@ h1 { font-size: clamp(26px, 6vw, 34px); line-height: 1.14; letter-spacing: -1px;
 .status { font-size: 14px; line-height: 1.55; padding: 15px; border-radius: 12px; background: #f1f6f9; margin-bottom: 22px; overflow-wrap: anywhere; }
 .status[data-state="published"] { background: #e8f7ee; color: #166a42; }
 .status[data-state="error"], .status[data-state="unconfirmed"] { background: #fff2e1; color: #83520f; }
+.diagnostic-code { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; margin: -8px 0 18px; font-weight: 650; }
 button { width: 100%; border: 0; border-radius: 13px; background: #127ca4; color: #fff; min-height: 51px; font: inherit; font-weight: 650; padding: 13px 16px; cursor: pointer; }
 button:hover:enabled { background: #0c6588; }
 button:disabled { opacity: .55; cursor: default; }
