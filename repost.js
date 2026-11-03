@@ -94,7 +94,7 @@ export function startRepostPage({ callAPI, createCallAPI, version = '0.2.3', cam
     const insideVK = bridge && (bridge.isWebView() || bridge.isIframe() || bridge.isEmbedded());
     log('info', 'repost.start', { version: VERSION, campaign: campaign.id, transport, insideVK: Boolean(insideVK) });
     if (!insideVK) {
-      status.textContent = 'Страница репоста должна открываться внутри зарегистрированного мини-приложения ВК. Пока приложение не подключено, публикация недоступна.';
+      status.textContent = 'Этот режим работает внутри приложения ВКонтакте. Откройте мини-приложение ВК по тестовой ссылке.';
       status.dataset.state = 'error';
       const openVK = document.getElementById('open-vk');
       if (openVK) openVK.hidden = false;
