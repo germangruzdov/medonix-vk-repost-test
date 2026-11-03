@@ -1,8 +1,8 @@
 import { campaigns, defaultCampaign } from './campaigns.js';
 import { selectCampaign, positiveId, diagnosticFields, withTimeout } from './core.js';
-import { createReposter } from './repost-core.js?v=0.2.1';
+import { createReposter } from './repost-core.js?v=0.2.2';
 
-const VERSION = '0.2.1';
+const VERSION = '0.2.2';
 const status = document.getElementById('status');
 const button = document.getElementById('publish');
 let diagnosticCode = document.getElementById('diagnostic-code');

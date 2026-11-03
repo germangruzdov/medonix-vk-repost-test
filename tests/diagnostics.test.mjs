@@ -10,13 +10,14 @@ const secretError = { error_type: 'api_error', error_data: {
   error_code: 15, error_msg: 'private data', access_token: 'do-not-expose', user_id: 12345,
 } };
 function make({ failAt, auth = { access_token: 'do-not-expose', scope: 'wall' },
-  source = { items: [post] }, result = { success: 1, post_id: 123 } } = {}) {
+  source = { items: [post] }, result = { success: 1, post_id: 123 }, copied = 0 } = {}) {
   const calls = []; const diagnostics = []; const logs = [];
   const bridge = { send: async (method, params) => {
     const operation = method === 'VKWebAppGetAuthToken' ? 'auth' : params.method;
     calls.push(operation);
     if (operation === failAt) throw secretError;
     if (operation === 'auth') return auth;
+    if (operation === 'likes.isLiked') return { response: { liked: 0, copied } };
     return { response: operation === 'wall.getById' ? source : result };
   } };
   const reposter = createReposter({ bridge, appId: 54874242, campaign,
@@ -52,10 +53,18 @@ test('unexpected source response records only structure and stops the write', as
   assert.equal(JSON.stringify(f.diagnostics).includes('private data'), false);
   assert.equal(f.calls.includes('wall.repost'), false);
 });
-test('missing duplicate-check flag is distinguishable from source retrieval failure', async () => {
-  const f = make({ source: { items: [{ ...post, reposts: {} }] } });
+test('unavailable flag in both endpoints is diagnosed as a fallback result failure', async () => {
+  const f = make({ source: { items: [{ ...post, reposts: {} }] }, copied: null });
   assert.equal(await f.reposter.run(), 'denied');
-  assert.deepEqual(f.diagnostics[0], { phase: 'REPOST_STATUS', code: 'REPOST_STATUS_UNKNOWN', flagType: 'undefined' });
+  assert.deepEqual(f.diagnostics[0], { phase: 'REPOST_STATUS_RESULT', code: 'REPOST_STATUS_UNKNOWN', copiedType: 'object' });
+  assert.equal(f.calls.includes('wall.repost'), false);
+});
+
+test('fallback API failures include a safe stage and numeric code without tokens', async () => {
+  const f = make({ source: { items: [{ ...post, reposts: {} }] }, failAt: 'likes.isLiked' });
+  assert.equal(await f.reposter.run(), 'denied');
+  assert.deepEqual(f.diagnostics[0], { phase: 'REPOST_STATUS_REQUEST', type: 'api_error', bridgeCode: 15 });
+  assert.equal(JSON.stringify(f.diagnostics).includes('do-not-expose'), false);
   assert.equal(f.calls.includes('wall.repost'), false);
 });
 test('write errors stay unconfirmed and locked while retaining safe diagnostics', async () => {

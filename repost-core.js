@@ -61,11 +61,24 @@ export function createReposter({ bridge, appId, campaign, onState = () => {}, on
         }
         phase = 'REPOST_STATUS';
         context = { flagType: typeof post.reposts?.user_reposted };
-        if (post.reposts?.user_reposted === 1) {
+        let userReposted = post.reposts?.user_reposted;
+        // user_reposted is optional in wall.getById. If unavailable, ask the
+        // documented read-only endpoint; copied describes the same action.
+        if (userReposted !== 0 && userReposted !== 1) {
+          phase = 'REPOST_STATUS_REQUEST'; context = {};
+          log('info', 'repost.status_fallback');
+          const statusResult = await withTimeout(bridge.send('VKWebAppCallAPIMethod', {
+            method: 'likes.isLiked', params: { v: '5.199', access_token: token,
+              type: 'post', owner_id: target.ownerId, item_id: target.postId },
+          }), requestTimeoutMs);
+          phase = 'REPOST_STATUS_RESULT';
+          userReposted = statusResult?.response?.copied;
+          context = { copiedType: typeof userReposted };
+          if (userReposted !== 0 && userReposted !== 1) throw new ShareError('REPOST_STATUS_UNKNOWN');
+        }
+        if (userReposted === 1) {
           terminal = true; update('already'); log('info', 'repost.already'); return 'already';
         }
-        // A missing flag is not evidence that it is safe to repeat a write.
-        if (post.reposts?.user_reposted !== 0) throw new ShareError('REPOST_STATUS_UNKNOWN');
         phase = 'REPOST_REQUEST'; context = {};
         update('publishing'); submitted = true;
         const result = await withTimeout(bridge.send('VKWebAppCallAPIMethod', {
