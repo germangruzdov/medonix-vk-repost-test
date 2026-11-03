@@ -1,4 +1,4 @@
-import { ShareError, positiveId, diagnosticFields, validPostResult, withTimeout } from './core.js?v=0.2.3';
+import { ShareError, positiveId, diagnosticFields, validPostResult, withTimeout } from './core.js?v=0.4.0';
 
 export function repostTarget(campaign) {
   const source = new URL(campaign.sourceUrl);
@@ -10,10 +10,11 @@ export function repostTarget(campaign) {
   return { object: `wall${match[1]}_${match[2]}`, ownerId: Number(match[1]), postId: Number(match[2]) };
 }
 
-export function createReposter({ bridge, appId, campaign, onState = () => {}, onDiagnostic = () => {}, log = () => {},
+export function createReposter({ bridge, appId, campaign, callAPI, onState = () => {}, onDiagnostic = () => {}, log = () => {},
   requestTimeoutMs = 15000 }) {
   const applicationId = Number(positiveId(appId));
   const target = repostTarget(campaign);
+  const request = callAPI ?? ((method, params) => bridge.send('VKWebAppCallAPIMethod', { method, params }));
   let pending;
   let terminal = false;
   return {
@@ -44,10 +45,8 @@ export function createReposter({ bridge, appId, campaign, onState = () => {}, on
         token = auth.access_token;
         phase = 'SOURCE_REQUEST'; context = {};
         update('checking');
-        const checked = await withTimeout(bridge.send('VKWebAppCallAPIMethod', {
-          method: 'wall.getById', params: { v: '5.199', access_token: token,
-            posts: `${target.ownerId}_${target.postId}` },
-        }), requestTimeoutMs);
+        const checked = await withTimeout(request('wall.getById', { v: '5.199', access_token: token,
+          posts: `${target.ownerId}_${target.postId}` }), requestTimeoutMs);
         phase = 'SOURCE_RESULT';
         const items = checked?.response?.items;
         context = {
@@ -67,10 +66,8 @@ export function createReposter({ bridge, appId, campaign, onState = () => {}, on
         if (userReposted !== 0 && userReposted !== 1) {
           phase = 'REPOST_STATUS_REQUEST'; context = {};
           log('info', 'repost.status_fallback');
-          const statusResult = await withTimeout(bridge.send('VKWebAppCallAPIMethod', {
-            method: 'likes.isLiked', params: { v: '5.199', access_token: token,
-              type: 'post', owner_id: target.ownerId, item_id: target.postId },
-          }), requestTimeoutMs);
+          const statusResult = await withTimeout(request('likes.isLiked', { v: '5.199', access_token: token,
+            type: 'post', owner_id: target.ownerId, item_id: target.postId }), requestTimeoutMs);
           phase = 'REPOST_STATUS_RESULT';
           userReposted = statusResult?.response?.copied;
           context = { copiedType: typeof userReposted };
@@ -81,8 +78,8 @@ export function createReposter({ bridge, appId, campaign, onState = () => {}, on
         }
         phase = 'REPOST_REQUEST'; context = {};
         update('publishing'); submitted = true;
-        const result = await withTimeout(bridge.send('VKWebAppCallAPIMethod', {
-          method: 'wall.repost', params: { v: '5.199', access_token: token, object: target.object },
+        const result = await withTimeout(request('wall.repost', {
+          v: '5.199', access_token: token, object: target.object,
         }), requestTimeoutMs);
         terminal = true;
         const state = result?.response?.success === 1 && validPostResult(result.response) ? 'published' : 'unconfirmed';
