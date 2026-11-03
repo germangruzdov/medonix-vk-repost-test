@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Настройка ссылки — МедОникс</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="setup.js"></script>
+</head>
+<body><main class="shell">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">м</span>МедОникс</div>
+  <section class="card setup-card">
+    <p class="eyebrow">ДЛЯ ВЛАДЕЛЬЦА ПРИЛОЖЕНИЯ</p>
+    <h1>Ссылка для подписчиков</h1>
+    <p class="intro">Сначала разместите папку dist на HTTPS-хостинге и укажите её адрес в настройках своего VK Mini App. Затем введите числовой ID приложения.</p>
+    <form id="setup-form" novalidate>
+      <label for="app-id">ID мини-приложения ВК</label>
+      <input id="app-id" name="app-id" inputmode="numeric" autocomplete="off" required aria-describedby="setup-status">
+      <button type="submit">Сформировать ссылку</button>
+    </form>
+    <p class="intro">Основной режим — настоящий репост записи № 6311. Доступ к нему требует проверки в зарегистрированном приложении ВК.</p>
+    <div id="setup-status" role="status" aria-live="polite"></div>
+    <a id="result-link" class="result-link" hidden></a>
+    <button type="button" id="copy-link" hidden>Скопировать ссылку</button>
+  </section>
+</main></body>
+</html>

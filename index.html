@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Репост записи — МедОникс</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/vk-bridge-3.0.2.min.js" defer></script>
+  <script type="module" src="repost.js"></script>
+</head>
+<body><main class="shell">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">м</span>МедОникс</div>
+  <section class="card" aria-labelledby="heading">
+    <div class="video-icon" aria-hidden="true">↗</div>
+    <p class="eyebrow">ИСХОДНАЯ ЗАПИСЬ СООБЩЕСТВА</p>
+    <h1 id="heading">Сделать репост</h1>
+    <p class="intro">Нажмите кнопку, чтобы разместить исходную запись МедОникс на своей стене. При первом использовании ВК может запросить разрешение.</p>
+    <div id="status" class="status" role="status" aria-live="polite">Подготавливаем приложение…</div>
+    <button type="button" id="publish" disabled>Сделать репост на моей стене</button>
+    <a id="source" class="source" href="https://vk.ru/wall-218885671_6311" target="_blank" rel="noopener noreferrer">Посмотреть исходную запись ↗</a>
+  </section>
+  <p class="footnote">Репост выполняется только после нажатия кнопки.<br><a class="source" href="privacy.html">Как используются данные</a></p>
+  <details id="diagnostics" hidden><summary>Диагностика</summary><pre id="diagnostic-output"></pre></details>
+</main></body></html>
