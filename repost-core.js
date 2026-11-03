@@ -1,4 +1,4 @@
-import { ShareError, positiveId, diagnosticFields, validPostResult, withTimeout } from './core.js';
+import { ShareError, positiveId, diagnosticFields, validPostResult, withTimeout } from './core.js?v=0.2.3';
 
 export function repostTarget(campaign) {
   const source = new URL(campaign.sourceUrl);

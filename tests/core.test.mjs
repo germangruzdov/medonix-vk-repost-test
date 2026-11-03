@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { campaigns, defaultCampaign } from '../campaigns.js';
 import { positiveId, parseMediaReference, selectCampaign, buildMiniAppLink, validPostResult,
-  diagnosticFields, createPublisher, withTimeout } from '../core.js';
+  diagnosticFields, diagnosticLabel, createPublisher, withTimeout } from '../core.js';
 
 const campaign = selectCampaign('#post=6311', campaigns, defaultCampaign);
 
@@ -51,6 +51,51 @@ test('diagnostics exclude secrets, messages, launch data and post IDs', () => {
     user_id: 123, error_data: { error_code: 15, error_reason: 'private', request_params: 'secret' } });
   assert.deepEqual(safe, { type: 'api_error', bridgeCode: 15 });
   assert.deepEqual(diagnosticFields(new Error('secret')), {});
+});
+
+test('client 11 and API 11 have distinct diagnostic labels', () => {
+  assert.equal(diagnosticLabel({ type: 'client_error', bridgeCode: 11 }), 'CLIENT_11');
+  assert.equal(diagnosticLabel({ type: 'api_error', bridgeCode: 11 }), 'API_11');
+  assert.equal(diagnosticLabel({ type: 'auth_error', bridgeCode: 11 }), 'AUTH_11');
+  assert.equal(diagnosticLabel({ bridgeCode: 11 }), 'VK_11');
+  assert.equal(diagnosticLabel({ bridgeCode: '11' }), 'NO_CODE');
+  assert.equal(diagnosticLabel({ code: 'REPOST_STATUS_UNKNOWN' }), 'REPOST_STATUS_UNKNOWN');
+});
+
+test('client explanations preserve technical meaning without retaining raw errors', () => {
+  const fields = diagnosticFields({ error_type: 'client_error', error_data: {
+    error_code: 11, error_reason: 'API method is not allowed',
+    error_description: 'Access denied for wall.repost',
+    request_params: [{ key: 'access_token', value: 'do-not-expose' }],
+  } });
+  assert.deepEqual(fields, { type: 'client_error', bridgeCode: 11,
+    clientReason: 'api method is not allowed', clientDescription: 'access denied for wall.repost' });
+  assert.equal(JSON.stringify(fields).includes('access_token'), false);
+});
+
+test('unknown explanation words, tokens, personal data and markup are redacted', () => {
+  const raw = 'Access denied Alice Smith alice@example.com +79991234567 test-token <script>alert(1)</script> private data Пациент Иванов';
+  const fields = diagnosticFields({ error_type: 'client_error', error_data: {
+    error_code: 11, error_reason: raw, error_description: 'a'.repeat(1000),
+  } });
+  const text = [fields.clientReason, fields.clientDescription].join('\n');
+  for (const secret of ['alice', 'smith', 'example', '79991234567', 'test-token', 'script', 'alert', 'private', 'data', 'Пациент', 'Иванов']) {
+    assert.equal(text.includes(secret), false, secret);
+  }
+  assert.match(fields.clientReason, /access denied/);
+  assert.match(fields.clientReason, /\[скрыто\]/);
+  assert.ok(fields.clientDescription.length < 40);
+});
+
+test('API messages and malformed client explanations are never copied into diagnostics', () => {
+  assert.deepEqual(diagnosticFields({ error_type: 'api_error', error_data: {
+    error_code: 11, error_reason: 'Access denied', error_description: 'private', error_msg: 'secret',
+  } }), { type: 'api_error', bridgeCode: 11 });
+  for (const value of [undefined, null, {}, [], 11, '', '   ']) {
+    assert.deepEqual(diagnosticFields({ error_type: 'client_error', error_data: {
+      error_code: 11, error_reason: value, error_description: value,
+    } }), { type: 'client_error', bridgeCode: 11 });
+  }
 });
 test('composer sends exactly one video to the current user and never calls wall.post', async () => {
   const calls = [];

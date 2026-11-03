@@ -9,13 +9,13 @@ const post = { id: 6311, owner_id: -218885671, reposts: { user_reposted: 0 } };
 const secretError = { error_type: 'api_error', error_data: {
   error_code: 15, error_msg: 'private data', access_token: 'do-not-expose', user_id: 12345,
 } };
-function make({ failAt, auth = { access_token: 'do-not-expose', scope: 'wall' },
+function make({ failAt, failure = secretError, auth = { access_token: 'do-not-expose', scope: 'wall' },
   source = { items: [post] }, result = { success: 1, post_id: 123 }, copied = 0 } = {}) {
   const calls = []; const diagnostics = []; const logs = [];
   const bridge = { send: async (method, params) => {
     const operation = method === 'VKWebAppGetAuthToken' ? 'auth' : params.method;
     calls.push(operation);
-    if (operation === failAt) throw secretError;
+    if (operation === failAt) throw failure;
     if (operation === 'auth') return auth;
     if (operation === 'likes.isLiked') return { response: { liked: 0, copied } };
     return { response: operation === 'wall.getById' ? source : result };
@@ -73,6 +73,20 @@ test('write errors stay unconfirmed and locked while retaining safe diagnostics'
   assert.equal(await f.reposter.run(), 'locked');
   assert.deepEqual(f.diagnostics[0], { phase: 'REPOST_REQUEST', type: 'api_error', bridgeCode: 15 });
   assert.equal(f.calls.filter((x) => x === 'wall.repost').length, 1);
+});
+
+test('client 11 after accepted wall permission stays distinct and never retries', async () => {
+  const f = make({ failAt: 'wall.repost', failure: { error_type: 'client_error', error_data: {
+    error_code: 11, error_reason: 'Access denied', error_description: 'Method is not allowed for wall.repost',
+    access_token: 'do-not-expose', request_params: ['private data'],
+  } } });
+  assert.equal(await f.reposter.run(), 'unconfirmed');
+  assert.equal(await f.reposter.run(), 'locked');
+  assert.deepEqual(f.diagnostics[0], { phase: 'REPOST_REQUEST', type: 'client_error', bridgeCode: 11,
+    clientReason: 'access denied', clientDescription: 'method is not allowed for wall.repost' });
+  assert.equal(f.calls.filter((x) => x === 'wall.repost').length, 1);
+  const text = JSON.stringify([f.logs, f.diagnostics]);
+  for (const secret of ['do-not-expose', 'private data', 'access_token', 'request_params']) assert.equal(text.includes(secret), false);
 });
 test('a malformed write result is never represented as a confirmed publication', async () => {
   const f = make({ result: {} });

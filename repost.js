@@ -1,8 +1,8 @@
 import { campaigns, defaultCampaign } from './campaigns.js';
-import { selectCampaign, positiveId, diagnosticFields, withTimeout } from './core.js';
-import { createReposter } from './repost-core.js?v=0.2.2';
+import { selectCampaign, positiveId, diagnosticFields, diagnosticLabel, withTimeout } from './core.js?v=0.2.3';
+import { createReposter } from './repost-core.js?v=0.2.3';
 
-const VERSION = '0.2.2';
+const VERSION = '0.2.3';
 const status = document.getElementById('status');
 const button = document.getElementById('publish');
 let diagnosticCode = document.getElementById('diagnostic-code');
@@ -37,8 +37,9 @@ function log(level, event, fields = {}) {
 }
 function reportDiagnostic(diagnostic) {
   lastDiagnostic = diagnostic;
-  const code = diagnostic.code ?? (Number.isSafeInteger(diagnostic.bridgeCode) ? `VK_${diagnostic.bridgeCode}` : 'NO_CODE');
-  diagnosticCode.textContent = `Код проверки: ${VERSION} / ${diagnostic.phase} / ${code}`;
+  const code = diagnosticLabel(diagnostic);
+  const explanation = [diagnostic.clientReason, diagnostic.clientDescription].filter(Boolean).join(' / ');
+  diagnosticCode.textContent = `Код проверки: ${VERSION} / ${diagnostic.phase} / ${code}${explanation ? ` / ${explanation}` : ''}`;
   diagnosticCode.hidden = false;
   diagnosticPanel.hidden = false;
   refreshDiagnosticPanel();
@@ -60,6 +61,9 @@ function render(state) {
     diagnosticPanel.hidden = !debug;
   }
   status.textContent = messages[state];
+  if (state === 'unconfirmed' && lastDiagnostic?.type === 'client_error') {
+    status.textContent = 'Клиент ВК вернул ошибку при отправке репоста. Разрешение на стену уже получено. Результат публикации не подтверждён; проверьте свою стену. Повторно запрос не отправляем.';
+  }
   if (state === 'denied') {
     if (lastDiagnostic?.code === 'WALL_PERMISSION_MISSING') {
       status.textContent = 'ВК не подтвердил право доступа к стене. Это отдельное право, даже если окно разрешения уже было принято. Репост не отправлялся.';

@@ -59,8 +59,35 @@ export function validPostResult(result) {
   } catch { return false; }
 }
 
-// Only these diagnostic fields can leave the controller. Raw bridge errors and
-// launch parameters may contain personal data and are deliberately excluded.
+// Reconstruct client explanations from a fixed technical vocabulary. Unknown
+// words, identifiers, numbers and other characters never enter the report.
+const diagnosticWords = new Set(('a an the this is are was be been can cannot could not no ' +
+  'has have should must only for from to of in on with or and api method methods ' +
+  'wall repost post call allowed allow available unavailable supported unsupported ' +
+  'access permission permissions denied forbidden restricted restriction ' +
+  'client application app version outdated update required user authorization ' +
+  'authorized unauthorized authenticated authentication auth invalid missing ' +
+  'parameter parameters params request requests response failed failure error unknown ' +
+  'network connection timeout timed out too many limit exceeded cancelled canceled ' +
+  'closed dialog disabled enabled test mode custom internal service operation ' +
+  'perform action platform device token scope found wall.repost wall.post').split(' '));
+
+function clientExplanation(value) {
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  const parts = value.slice(0, 256).toLowerCase().match(/[a-z0-9_]+(?:[./-][a-z0-9_]+)*|\s+|[.,:;()/-]|[^a-z0-9_\s.,:;()/-]+/g) ?? [];
+  const safe = parts.map((part) => diagnosticWords.has(part) || /^[\s.,:;()/-]+$/.test(part)
+    ? part : '[скрыто]').join('').replace(/(?:\[скрыто\][\s/-]*){2,}/g, '[скрыто] ');
+  return safe.trim();
+}
+
+export function diagnosticLabel(diagnostic) {
+  if (diagnostic.code) return diagnostic.code;
+  if (!Number.isSafeInteger(diagnostic.bridgeCode)) return 'NO_CODE';
+  const prefix = { client_error: 'CLIENT', api_error: 'API', auth_error: 'AUTH' }[diagnostic.type] ?? 'VK';
+  return `${prefix}_${diagnostic.bridgeCode}`;
+}
+
+// Raw bridge errors, API messages and launch parameters remain excluded.
 export function diagnosticFields(error) {
   const fields = {};
   if (error instanceof ShareError) fields.code = error.code;
@@ -68,6 +95,12 @@ export function diagnosticFields(error) {
   if (['client_error', 'api_error', 'auth_error'].includes(type)) fields.type = type;
   const code = error?.error_data?.error_code;
   if (Number.isSafeInteger(code)) fields.bridgeCode = code;
+  if (type === 'client_error') {
+    const reason = clientExplanation(error?.error_data?.error_reason);
+    const description = clientExplanation(error?.error_data?.error_description);
+    if (reason) fields.clientReason = reason;
+    if (description) fields.clientDescription = description;
+  }
   return fields;
 }
 
