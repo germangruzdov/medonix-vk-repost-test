@@ -1,6 +1,6 @@
 import { campaigns, defaultCampaign } from './campaigns.js';
 import { selectCampaign, positiveId, diagnosticFields, diagnosticLabel, withTimeout, ShareError } from './core.js?v=0.4.0';
-import { createReposter } from './repost-core.js?v=0.4.0';
+import { createReposter } from './repost-core.js?v=0.5.0';
 
 export function startRepostPage({ callAPI, createCallAPI, version = '0.2.3', campaignHash = location.hash,
   transport = 'bridge', expectedAppId } = {}) {
@@ -70,6 +70,9 @@ export function startRepostPage({ callAPI, createCallAPI, version = '0.2.3', cam
       status.textContent = [15, 20].includes(lastDiagnostic.bridgeCode)
         ? 'API ВК отказал в репосте для выданного токена. Повторно запрос не отправляем.'
         : 'API ВК вернул ошибку при отправке репоста. Проверьте свою стену. Повторно запрос не отправляем.';
+    }
+    if (state === 'unconfirmed' && transport === 'stored_procedure' && lastDiagnostic?.bridgeCode === 3) {
+      status.textContent = 'ВК не нашёл хранимую процедуру. Владельцу приложения нужно сохранить medonix_repost6311 версии 1 в настройках ВК.';
     }
     if (state === 'denied') {
       if (lastDiagnostic?.code === 'WALL_PERMISSION_MISSING') {

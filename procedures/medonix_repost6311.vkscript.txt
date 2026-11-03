@@ -1,0 +1,20 @@
+var source = API.wall.getById({"posts":"-218885671_6311"});
+if (!source || !source.items || source.items.length != 1) {
+  return {"state":"source_unavailable"};
+}
+var post = source.items[0];
+if (post.owner_id != -218885671 || post.id != 6311) {
+  return {"state":"source_unavailable"};
+}
+var status = API.likes.isLiked({"type":"post","owner_id":-218885671,"item_id":6311});
+if (!status || (status.copied != 0 && status.copied != 1)) {
+  return {"state":"status_unavailable"};
+}
+if (status.copied == 1) {
+  return {"state":"already"};
+}
+var result = API.wall.repost({"object":"wall-218885671_6311"});
+if (!result || result.success != 1 || !result.post_id || result.post_id <= 0) {
+  return {"state":"unconfirmed"};
+}
+return {"state":"published","post_id":result.post_id};

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 async function setup(t, { insideVK = true, sourceNetworkError = false, apiError, appId = 54874242,
-  hash = '#post=6311&experiment=http-repost' } = {}) {
+  hash = '#post=6311&experiment=http-repost', storedError } = {}) {
   const keys = ['document', 'window', 'location', 'fetch'];
   const previous = Object.fromEntries(keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   t.after(() => {
@@ -40,6 +40,14 @@ async function setup(t, { insideVK = true, sourceNetworkError = false, apiError,
         if (method === 'VKWebAppInit') return {};
         if (method === 'VKWebAppGetLaunchParams') return { vk_app_id: appId, vk_user_id: 123 };
         if (method === 'VKWebAppGetAuthToken') return { access_token: 'private-token', scope: 'wall' };
+        if (hash.includes('experiment=stored-repost') && method === 'VKWebAppCallAPIMethod') {
+          if (params.method === 'wall.getById') return { response: { items: [
+            { owner_id: -218885671, id: 6311, reposts: { user_reposted: 0 } },
+          ] } };
+          assert.equal(params.method, 'execute.medonix_repost6311');
+          if (storedError) throw { error_type: 'api_error', error_data: { error_code: storedError } };
+          return { response: { state: 'published', post_id: 456 } };
+        }
         throw new Error('Bridge API transport must not run in the HTTP experiment');
       },
     } },
@@ -119,5 +127,28 @@ test('the ordinary link still loads the video flow, without selecting the experi
   await f.waitFor(() => f.elements.get('status').dataset.state === 'error');
   assert.equal(f.elements.get('heading').textContent, 'Поделиться видео');
   assert.equal(f.elements.get('build-version').textContent, 'Версия 0.3.0');
+  assert.equal(f.requests.length, 0);
+});
+
+test('the stored mode uses only VK Bridge and does not call the procedure before a click', async (t) => {
+  const f = await setup(t, { hash: '#post=6311&experiment=stored-repost' });
+  await f.waitFor(() => f.elements.get('status').dataset.state === 'ready');
+  assert.equal(f.elements.get('build-version').textContent, 'Версия 0.5.0');
+  assert.equal(f.nativeCalls.some(([, params]) => params?.method === 'execute.medonix_repost6311'), false);
+  f.elements.get('publish').listeners.click();
+  await f.waitFor(() => f.elements.get('status').dataset.state === 'published');
+  assert.equal(f.requests.length, 0);
+  assert.equal(f.nativeCalls.filter(([, params]) => params?.method === 'execute.medonix_repost6311').length, 1);
+  assert.equal(f.nativeCalls.some(([, params]) => params?.method === 'wall.repost'), false);
+});
+
+test('an unregistered stored procedure shows the concrete owner action instead of success', async (t) => {
+  const f = await setup(t, { hash: '#post=6311&experiment=stored-repost', storedError: 3 });
+  await f.waitFor(() => f.elements.get('status').dataset.state === 'ready');
+  f.elements.get('publish').listeners.click();
+  await f.waitFor(() => f.elements.get('status').dataset.state === 'unconfirmed');
+  assert.match(f.elements.get('status').textContent, /medonix_repost6311 версии 1/);
+  assert.match(f.elements.get('diagnostic-code').textContent, /API_3/);
+  assert.equal(f.elements.get('publish').disabled, true);
   assert.equal(f.requests.length, 0);
 });

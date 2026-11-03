@@ -90,6 +90,9 @@ export function createReposter({ bridge, appId, campaign, callAPI, onState = () 
         });
         return state;
       }).catch((error) => {
+        if (submitted && error instanceof ShareError && error.code === 'PROCEDURE_ALREADY_REPOSTED') {
+          terminal = true; update('already'); log('info', 'repost.already'); return 'already';
+        }
         // Never repeat a potentially completed wall.repost, including after a
         // timeout or network error. Pre-write permission/read failures may be
         // retried only by another explicit user action.
